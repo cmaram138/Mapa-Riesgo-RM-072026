@@ -9,9 +9,9 @@
   html, body { margin:0; padding:0; height:100%; font-family: 'Segoe UI', Arial, sans-serif; }
   #map { position:absolute; top:60px; bottom:0; left:0; right:0; }
   #header { height:60px; background:#0f3638; color:#fff; display:flex; align-items:center; padding:0 16px; box-shadow:0 2px 6px rgba(0,0,0,0.3); z-index:1000; }
-  #header h1 { font-size:16px; margin:0; font-weight:600; }
-  #header span { font-size:12px; opacity:0.85; margin-left:12px; }
-  .legend { background:white; padding:10px 12px; border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,0.4); font-size:12px; line-height:1.6; max-width:230px; }
+  #header h1 { font-size:15px; margin:0; font-weight:600; }
+  #header span { font-size:11px; opacity:0.85; margin-left:12px; }
+  .legend { background:white; padding:10px 12px; border-radius:6px; box-shadow:0 1px 6px rgba(0,0,0,0.4); font-size:12px; line-height:1.6; max-width:240px; max-height:80vh; overflow-y:auto; }
   .legend b { display:block; margin-bottom:4px; font-size:13px; }
   .legend .item { display:flex; align-items:center; gap:6px; margin-bottom:2px; }
   .dot { width:14px; height:14px; border-radius:50%; display:inline-block; text-align:center; font-size:10px; line-height:14px; }
@@ -20,13 +20,13 @@
 <body>
 <div id="header">
   <h1>SAMU Metropolitano — Mapa de Riesgo Operativo</h1>
-  <span>Sistema frontal 20 de julio 2026 · Corte: 20 jul 2026, actualización matinal · Enlace radial de respaldo: CA3CMO</span>
+  <span>Nuevo frente iniciado 20 jul 2026, 00:00 hrs · Bases GRD 2026 integradas · Enlace radial de respaldo: CA3CMO</span>
 </div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-var map = L.map('map', { zoomControl: true }).setView([-33.55, -70.70], 10);
+var map = L.map('map', { zoomControl: true }).setView([-33.50, -70.70], 10);
 
 var streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19, attribution: '© OpenStreetMap contributors'
@@ -37,7 +37,6 @@ var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
 var relief = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 13, attribution: 'Esri World Shaded Relief'
 });
-
 streets.addTo(map);
 
 function makeIcon(emoji, bg) {
@@ -53,80 +52,102 @@ var iconOla = makeIcon('🌊', '#5c1a1a');
 var iconMontana = makeIcon('⛰️', '#000000');
 var iconEspecial = makeIcon('⚡', '#6a1b9a');
 var iconAmb = makeIcon('🚑', '#1565c0');
-var iconNuevo = makeIcon('🆕', '#d32f2f');
+var iconAccidente = makeIcon('🚧', '#b71c1c');
 
 var layerPasos = L.layerGroup();
 var layerCalles = L.layerGroup();
 var layerCanales = L.layerGroup();
 var layerGeo = L.layerGroup();
 var layerEspecial = L.layerGroup();
-var layerNuevo20jul = L.layerGroup();
+var layerBases = L.layerGroup();
+var layerVial = L.layerGroup();
 
 function addPt(layer, coords, icon, title, desc, estado) {
-  var color = estado === 'ACTIVO/VIGENTE' ? '#c62828' : (estado === 'MONITOREO' ? '#e67e22' : '#555');
+  var color = estado === 'ACTIVO/VIGENTE' ? '#c62828' : (estado === 'MONITOREO' ? '#e67e22' : (estado === 'NO CONFIRMADO' ? '#8e44ad' : (estado === 'OPERATIVA' ? '#1565c0' : '#555')));
   L.marker(coords, {icon: icon}).addTo(layer)
     .bindPopup('<b>'+title+'</b><br>'+desc+'<br><span style="color:'+color+';font-weight:600;">Estado: '+estado+'</span>');
 }
 
-// PASOS BAJO NIVEL INUNDADOS (dataset previo, vigencia a confirmar)
+// PASOS BAJO NIVEL INUNDADOS (histórico, vigencia por confirmar en terreno)
 addPt(layerPasos, [-33.522,-70.683], iconAuto, "Lo Espejo — Paso Lo Sierra/Av. Lo Espejo (EFE)", "Punto histórico crítico de anegamiento.", "MONITOREO");
 addPt(layerPasos, [-33.571,-70.668], iconAuto, "El Bosque — Paso Inferior Las Ovejas (EFE)", "Punto histórico crítico de anegamiento.", "MONITOREO");
 addPt(layerPasos, [-33.484,-70.645], iconAuto, "San Miguel — Paso Av. Departamental c/ Gran Avenida", "Punto histórico crítico de anegamiento.", "MONITOREO");
 addPt(layerPasos, [-33.447,-70.719], iconAuto, "Lo Prado — Av. Ecuador c/ Isla Decepción", "Punto histórico crítico de anegamiento.", "MONITOREO");
-addPt(layerPasos, [-33.443,-70.782], iconAuto, "Pudahuel — Paso bajo nivel Teniente Cruz, Ruta 68", "Corte histórico recurrente de Ruta 68 por acumulación de agua.", "MONITOREO");
+addPt(layerPasos, [-33.443,-70.782], iconAuto, "Pudahuel — Paso bajo nivel Teniente Cruz, Ruta 68", "Corte histórico recurrente de Ruta 68.", "MONITOREO");
 addPt(layerPasos, [-33.592,-70.721], iconAuto, "San Bernardo — Paso bajo nivel Balmaceda", "Punto histórico crítico de anegamiento.", "MONITOREO");
-addPt(layerPasos, [-33.578,-70.718], iconAuto, "San Bernardo — Paso San José / Línea Férrea", "Coordenada original reportada con inconsistencia (-37.578); se ajustó referencialmente. VERIFICAR.", "MONITOREO");
+addPt(layerPasos, [-33.578,-70.718], iconAuto, "San Bernardo — Paso San José / Línea Férrea", "Coordenada original con inconsistencia (-37.578) ajustada referencialmente. VERIFICAR.", "MONITOREO");
 addPt(layerPasos, [-33.587,-70.715], iconAuto, "San Bernardo — Paso O'Higgins c/ EFE", "Punto histórico crítico de anegamiento.", "MONITOREO");
 addPt(layerPasos, [-33.565,-70.715], iconAuto, "San Bernardo — Paso Colón c/ Línea Férrea", "Punto histórico crítico de anegamiento.", "MONITOREO");
 addPt(layerPasos, [-33.582,-70.72], iconAuto, "San Bernardo — Paso Regina Gálvez", "Punto histórico crítico de anegamiento.", "MONITOREO");
 
-// CALLES CON ANEGAMIENTO CONFIRMADO (fuentes 16-20 jul 2026)
-addPt(layerCalles, [-33.4489,-70.6693], iconGota, "Santiago Centro — Av. El Parque desde Av. Viel al norte", "Tránsito suspendido por vía totalmente inundada (reporte Transporte Informa).", "ACTIVO/VIGENTE");
-addPt(layerCalles, [-33.4372,-70.6822], iconGota, "Santiago Centro — Matucana entre Compañía y San Pablo", "Calzada totalmente anegada; agua invade acera y afecta paraderos RED.", "ACTIVO/VIGENTE");
-addPt(layerCalles, [-33.359,-70.729], iconGota, "Quilicura — Av. Américo Vespucio, sector Lo Echevers", "Colapso de alcantarillado por falta de colector de aguas lluvia; corte de tránsito en caletera.", "ACTIVO/VIGENTE");
-addPt(layerCalles, [-33.545,-70.598], iconGota, "La Florida — Rafael Matus entre Santa Raquel y La Medialuna", "Tránsito suspendido por vía anegada.", "ACTIVO/VIGENTE");
-addPt(layerCalles, [-33.495,-70.706], iconGota, "Lo Espejo — Paso nivel Ruta 5 / Av. Gral. Velásquez", "Totalmente anegado, tránsito suspendido/restringido y controlado por personal de seguridad.", "ACTIVO/VIGENTE");
-addPt(layerCalles, [-33.606,-70.880], iconGota, "Peñaflor — Sector La Mañana con Los Aromos", "Inundación severa de calzada (dataset previo).", "MONITOREO");
+// CALLES ANEGADAS ACTIVAS Y ESTRUCTURALES CONFIRMADAS
+addPt(layerCalles, [-33.4489,-70.6693], iconGota, "Santiago Centro — Av. El Parque desde Av. Viel al norte", "Antecedente de tránsito suspendido por vía totalmente inundada; punto recurrente en el evento reciente.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.4372,-70.6822], iconGota, "Santiago Centro — Matucana entre Compañía y San Pablo", "Calzada anegada de forma recurrente; afecta paraderos RED.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.359,-70.729], iconGota, "Quilicura — Av. Américo Vespucio, sector Lo Echevers", "Colapso de alcantarillado por falta de colector de aguas lluvia; corte recurrente confirmado.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.545,-70.598], iconGota, "La Florida — Rafael Matus entre Santa Raquel y La Medialuna", "Tránsito paralizado por vía anegada de forma recurrente.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.495,-70.706], iconGota, "Lo Espejo — Paso nivel Ruta 5 / Av. Gral. Velásquez", "Anegamiento total recurrente, tránsito restringido.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.658,-70.933], iconGota, "Talagante — Villa Los Presidentes", "27 viviendas inundadas confirmadas por Bomberos (16 carros desplegados) en evento reciente; sector de vigilancia prioritaria ante nuevo frente.", "ACTIVO/VIGENTE");
+addPt(layerCalles, [-33.606,-70.880], iconGota, "Peñaflor — Sector La Mañana con Los Aromos", "Inundación severa histórica de calzada.", "MONITOREO");
 addPt(layerCalles, [-33.495,-70.758], iconGota, "Maipú — Vespucio-Pajaritos, punto bajo", "Punto histórico de cota baja.", "MONITOREO");
 addPt(layerCalles, [-33.502,-70.765], iconGota, "Maipú — Gral. Velásquez / Espejo sur-oriente", "Punto histórico de cota baja.", "MONITOREO");
-addPt(layerCalles, [-33.505,-70.625], iconGota, "San Joaquín — Av. Lo Ovalle c/ Av. Las Industrias", "Punto histórico crítico identificado por MOP (11 puntos críticos RM).", "MONITOREO");
+addPt(layerCalles, [-33.505,-70.625], iconGota, "San Joaquín — Av. Lo Ovalle c/ Av. Las Industrias", "Punto crítico estructural MOP.", "MONITOREO");
 addPt(layerCalles, [-33.501,-70.628], iconGota, "San Joaquín — Av. Lo Ovalle c/ Vecinal Sur", "Punto histórico de anegamiento.", "MONITOREO");
 addPt(layerCalles, [-33.509,-70.622], iconGota, "San Joaquín — Av. Lo Ovalle c/ Haydn", "Punto histórico de anegamiento.", "MONITOREO");
 addPt(layerCalles, [-33.570,-70.633], iconGota, "La Pintana — Av. Observatorio c/ Teniente Cruz", "Punto histórico de anegamiento.", "MONITOREO");
 addPt(layerCalles, [-33.574,-70.628], iconGota, "La Pintana — Av. Departamental c/ El Manzano", "Punto histórico de anegamiento.", "MONITOREO");
 addPt(layerCalles, [-33.647,-70.563], iconGota, "Puente Alto — Las Hortensias c/ Peumo, Bajos de Mena", "Punto histórico de anegamiento.", "MONITOREO");
 addPt(layerCalles, [-33.438,-70.769], iconGota, "Pudahuel — Claudio Arrau / Portezuelo", "Punto histórico de anegamiento.", "MONITOREO");
-addPt(layerCalles, [-33.42,-70.68], iconGota, "Tiltil — Cruce Camino Tiltil-Polpaico, paso nivel ferroviario", "Alta precaución por aumento de caudal del Estero Tiltil (dato validado 16 jul, sin confirmación 20 jul).", "MONITOREO");
+addPt(layerCalles, [-33.42,-70.68], iconGota, "Tiltil — Cruce Camino Tiltil-Polpaico, paso nivel ferroviario", "Antecedente de aumento de caudal del Estero Tiltil; sin confirmación para el nuevo frente.", "MONITOREO");
+addPt(layerCalles, [-33.395,-70.62], iconGota, "Zanjón de La Aguada / Parque Inundable Víctor Jara", "Punto crítico estructural MOP de contención de crecidas urbanas.", "MONITOREO");
+addPt(layerCalles, [-33.365,-70.635], iconGota, "Huechuraba — Colector calle G", "Punto crítico estructural MOP.", "MONITOREO");
+addPt(layerCalles, [-33.42,-70.665], iconGota, "Independencia — Colector Independencia", "Punto crítico estructural MOP.", "MONITOREO");
 
 // DESBORDES DE CANALES Y RÍOS
-addPt(layerCanales, [-33.508,-70.78], iconOla, "Maipú — Canal Santa Marta, paralelo Av. Lo Espejo sur", "Registro de desborde momentáneo y caudal elevado en eventos previos del mismo sistema frontal.", "MONITOREO");
-addPt(layerCanales, [-33.534,-70.78], iconOla, "Maipú — Canal Lo Espejo / Ruta 78", "Punto histórico crítico identificado por MOP.", "MONITOREO");
-addPt(layerCanales, [-33.658,-70.933], iconOla, "Talagante — Campamento El Telar, lecho seco Río Maipo", "Talagante reportado por Senapred como sector mayormente afectado por colapso de cursos de agua (18 jul).", "ACTIVO/VIGENTE");
+addPt(layerCanales, [-33.508,-70.78], iconOla, "Maipú — Canal Santa Marta, paralelo Av. Lo Espejo sur", "Registro de desborde momentáneo y caudal elevado en eventos previos del sistema frontal.", "MONITOREO");
+addPt(layerCanales, [-33.534,-70.78], iconOla, "Maipú — Canal Lo Espejo / Ruta 78", "Punto crítico estructural MOP.", "MONITOREO");
+addPt(layerCanales, [-33.658,-70.933], iconOla, "Talagante — Campamento El Telar, lecho seco Río Maipo", "Sector de riesgo por campamentos en lecho seco; Talagante reportado por Senapred como zona de mayor afectación por colapso de cursos de agua.", "ACTIVO/VIGENTE");
 addPt(layerCanales, [-33.675,-71.018], iconOla, "El Monte — Campamentos ribera Río Mapocho, sector Pedro de Valdivia", "Riesgo por campamentos en ribera.", "MONITOREO");
-addPt(layerCanales, [-33.395,-70.995], iconOla, "María Pinto — Colapso de cursos de agua (comuna)", "Comuna bajo Alerta Roja vigente de Senapred por colapso de cursos de agua.", "ACTIVO/VIGENTE");
+addPt(layerCanales, [-33.395,-70.995], iconOla, "María Pinto — Colapso de cursos de agua (comuna)", "Comuna con Alerta Roja de Senapred vigente al 18 jul por colapso de cursos de agua.", "ACTIVO/VIGENTE");
+addPt(layerCanales, [-33.5,-70.6], iconOla, "Estero Las Cruces / Quebrada Lo Cañas / Canal El Carmen / Canal Los Choros", "Puntos críticos estructurales MOP de vigilancia permanente ante cualquier aporte pluviométrico.", "MONITOREO");
 
 // RIESGOS GEOLÓGICOS / REMOCIÓN / NIEVE
-addPt(layerGeo, [-33.648,-70.362], iconMontana, "San José de Maipo — Ruta G-21 / Farellones", "Cierre preventivo de accesos a Farellones, La Parva, El Colorado y Valle Nevado, vigente 15-18 jul; situación cordillerana persiste.", "ACTIVO/VIGENTE");
-addPt(layerGeo, [-33.753,-70.262], iconMontana, "San José de Maipo — San Alfonso / El Volcán", "Alta cordillera, antecedentes de remoción activa y evacuaciones preventivas en eventos anteriores del mismo frente.", "MONITOREO");
-addPt(layerGeo, [-33.505,-70.552], iconMontana, "La Florida — Quebrada de Macul", "Punto crítico histórico monitoreado por MOP/Sernageomin.", "MONITOREO");
+addPt(layerGeo, [-33.648,-70.362], iconMontana, "San José de Maipo — Ruta G-21 / Farellones", "Cierre preventivo de accesos a Farellones, La Parva, El Colorado y Valle Nevado; situación cordillerana persiste.", "ACTIVO/VIGENTE");
+addPt(layerGeo, [-33.753,-70.262], iconMontana, "San José de Maipo — San Alfonso / El Volcán", "Alta cordillera, antecedentes de remoción activa.", "MONITOREO");
+addPt(layerGeo, [-33.505,-70.552], iconMontana, "La Florida — Quebrada de Macul", "Punto crítico estructural MOP/Sernageomin.", "MONITOREO");
 addPt(layerGeo, [-33.467,-70.558], iconMontana, "Peñalolén — Quebrada Nido de Águila", "Quebrada activa, monitoreo permanente.", "MONITOREO");
 addPt(layerGeo, [-33.481,-70.545], iconMontana, "Peñalolén — Quebrada de Lo Hermida", "Quebrada activa, monitoreo permanente.", "MONITOREO");
-addPt(layerGeo, [-33.65,-70.35], iconMontana, "San José de Maipo — Sector San Gabriel", "Suspensión de clases decretada por Seremi de Educación RM para el 20 de julio por condiciones meteorológicas de riesgo (remoción en masa/nieve).", "ACTIVO/VIGENTE");
+addPt(layerGeo, [-33.65,-70.35], iconMontana, "San José de Maipo — Sector San Gabriel / comuna completa", "Suspensión de clases decretada por Seremi de Educación RM para el 20 de julio por riesgo de remoción en masa y condiciones cordilleranas adversas.", "ACTIVO/VIGENTE");
 
-// INCIDENTES ESPECIALES / RED DE SALUD
-addPt(layerEspecial, [-33.425,-70.748], iconEspecial, "Cerro Navia — Incidente Fatal Eléctrico (16 jul, evento previo)", "Av. La Estrella c/ Los Conquistadores. Hecho anterior ya reportado; sin relación directa con el frente del 20 de julio.", "HISTÓRICO");
-addPt(layerEspecial, [-33.195,-70.686], iconAmb, "Colina — Base SAMU 25", "Base de referencia de la red SAMU.", "OPERATIVA");
-addPt(layerEspecial, [-33.598,-70.706], iconAmb, "San Bernardo — Base SAMU 30, San Alfonso 1123", "Base de referencia de la red SAMU.", "OPERATIVA");
+// INCIDENTE VIAL — AUTOPISTA DEL ACONCAGUA (SIN CONFIRMACIÓN)
+addPt(layerVial, [-32.90,-70.75], iconAccidente, "Autopista del Aconcagua / Ruta 5 Norte — Presunto accidente reportado", "No se encontró confirmación oficial ni de prensa de un accidente activo en la Autopista del Aconcagua durante la jornada del 20 de julio de 2026 al momento de esta consulta. Se registra como alerta preliminar sin validar. Se recomienda verificar directamente con @Autop_Aconcagua (VíasChile) y Transporte Informa antes de tomar decisiones operativas.", "NO CONFIRMADO");
 
-// NUEVOS PUNTOS DEL FRENTE 20 JULIO (confirmados por fuentes de prensa/DMC)
-addPt(layerNuevo20jul, [-27.15,-70.35], iconNuevo, "Fuera de RM — Referencia nacional (Curepto, Maule)", "Persona desaparecida en el Maule desde el 17 de julio confirmada fallecida el 19 de julio (trabajador CGE); fuera del área RM pero contextual al balance nacional.", "HISTÓRICO");
+// BASES SAMU (fuente: archivo adjunto GRD 2026)
+addPt(layerBases, [-33.4489,-70.6533], iconAmb, "Base 11/20/21 — Hospital Urgencia Asistencia Pública", "Av. Portugal 125, Santiago. Tel: 2 5628 1288 / 2 5628 1452. 4 móviles (menor complejidad, avanzado, medicalizado).", "OPERATIVA");
+addPt(layerBases, [-33.5115,-70.7645], iconAmb, "Base 13/14 — CRS Maipú", "Camino Rinconada 1001, Maipú. Tel: 246459 / 2 2800 0196. 4 móviles (menor complejidad, avanzado).", "OPERATIVA");
+addPt(layerBases, [-33.4187,-70.6636], iconAmb, "Base 22/23 — No adosada a centro de salud", "Domingo Santa María 1207, Independencia. Tel: 2 3220 4862 / 4861. 4 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.195,-70.686], iconAmb, "Base 25 — No adosada a centro de salud", "Calle B sin número, Colina. Tel: 2 3220 4860. 1 móvil avanzado + 1 adicional.", "OPERATIVA");
+addPt(layerBases, [-33.598,-70.706], iconAmb, "Base 30 — CESFAM Dr. Raúl Cuevas", "San Alfonso 1123, San Bernardo. Tel: 2 3220 4881. 1 móvil avanzado + 1 adicional.", "OPERATIVA");
+addPt(layerBases, [-33.7361,-70.7434], iconAmb, "Base 31/32 — Hospital de Buin", "Arturo Prat 250, Buin. Tel: 2 3220 4866. 3 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.4949,-70.6533], iconAmb, "Base 33/35 — Hospital Barros Luco Trudeau", "Gran Avenida 3204, San Miguel. Tel: 2 3220 4881. 5 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.4256,-70.6083], iconAmb, "Base 40/46 — Hospital Metropolitano", "Holanda 050, Providencia. Tel: 2 3220 4869. 2 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.4562,-70.5977], iconAmb, "Base 44 — Ex Posta 4", "Juan Moya 1320, Ñuñoa. Tel: +569 4264 4614. 1 móvil avanzado.", "OPERATIVA");
+addPt(layerBases, [-33.4834,-70.5364], iconAmb, "Base 45 — Hospital Luis Tisné", "Av. Las Torres 5156, Peñalolén. Tel: 2 2472 5471. 1 móvil menor complejidad.", "OPERATIVA");
+addPt(layerBases, [-33.4372,-70.6247], iconAmb, "Base 48 — Hospital Salvador", "Rancagua 878, Providencia. Tel: 2 2568 4118. 2 móviles menor complejidad.", "OPERATIVA");
+addPt(layerBases, [-33.6889,-71.2158], iconAmb, "Base 15 — Hospital de Melipilla", "O'Higgins 525, Melipilla. Tel: 2 2586 5465. 1 móvil avanzado.", "OPERATIVA");
+addPt(layerBases, [-33.5761,-70.8258], iconAmb, "Base 17 — No adosada a Centro de Salud", "José Luis Caro 1640, Padre Hurtado. Tel: 2 2800 0160. 1 móvil avanzado.", "OPERATIVA");
+addPt(layerBases, [-33.4103,-71.1289], iconAmb, "Base 53 — Hospital de Curacaví", "Bernardo O'Higgins 500, Curacaví. Tel: 245465. 1 móvil menor complejidad.", "OPERATIVA");
+addPt(layerBases, [-33.4229,-70.7218], iconAmb, "Base 55/57/DGR — Ex Hospital Félix Bulnes", "Dr. Lorenzo Urcaray 4347, Quinta Normal. Tel: 3 2800 0150 / 281060. 4 móviles incl. Vehículo de Respuesta ante Desastres.", "OPERATIVA");
+addPt(layerBases, [-33.4256,-70.7481], iconAmb, "Base 58/59 — No adosada a centro de salud", "Mapocho 8267, Cerro Navia. Tel: 246700. 3 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.6142,-70.5757], iconAmb, "Base 66/76 — No adosada a Centro de Salud", "El Peñón 139, Puente Alto. Tel: 2 2800 0921. 4 móviles (avanzado, menor complejidad).", "OPERATIVA");
+addPt(layerBases, [-33.5497,-70.5896], iconAmb, "Base 68 — Consultorio Bellavista", "Froilán Roa 6420, La Florida. Tel: 2 2800 0144. 1 móvil menor complejidad.", "OPERATIVA");
 
 streets.addTo(map);
 layerPasos.addTo(map);
 layerCalles.addTo(map);
 layerCanales.addTo(map);
 layerGeo.addTo(map);
-layerEspecial.addTo(map);
+layerVial.addTo(map);
+layerBases.addTo(map);
 
 var baseLayers = {
   "Mapa con Calles": streets,
@@ -135,10 +156,11 @@ var baseLayers = {
 };
 var overlays = {
   "Pasos bajo nivel inundados 🚗": layerPasos,
-  "Calles anegadas / anegamiento crónico 💧": layerCalles,
+  "Calles anegadas / anegamiento 💧": layerCalles,
   "Desbordes canales y ríos 🌊": layerCanales,
   "Riesgos geológicos / remoción / nieve ⛰️": layerGeo,
-  "Incidentes especiales / Red SAMU": layerEspecial
+  "Incidente vial no confirmado 🚧": layerVial,
+  "Bases SAMU (GRD 2026) 🚑": layerBases
 };
 L.control.layers(baseLayers, overlays, {collapsed:false}).addTo(map);
 
@@ -150,12 +172,13 @@ legend.onAdd = function() {
     '<div class="item"><span class="dot" style="background:#e67e22;">💧</span> Calle anegada</div>' +
     '<div class="item"><span class="dot" style="background:#5c1a1a;">🌊</span> Desborde canal/río</div>' +
     '<div class="item"><span class="dot" style="background:#000;">⛰️</span> Riesgo geológico/nieve</div>' +
-    '<div class="item"><span class="dot" style="background:#6a1b9a;">⚡</span> Incidente especial</div>' +
-    '<div class="item"><span class="dot" style="background:#1565c0;">🚑</span> Base SAMU</div>' +
+    '<div class="item"><span class="dot" style="background:#b71c1c;">🚧</span> Incidente vial no confirmado</div>' +
+    '<div class="item"><span class="dot" style="background:#1565c0;">🚑</span> Base SAMU (GRD 2026)</div>' +
     '<hr style="margin:6px 0;">' +
     '<div style="font-size:11px;color:#c62828;">● ACTIVO/VIGENTE (confirmado prensa/oficial)</div>' +
     '<div style="font-size:11px;color:#e67e22;">● MONITOREO (histórico, vigencia por confirmar)</div>' +
-    '<div style="font-size:11px;color:#555;">● HISTÓRICO / referencial</div>';
+    '<div style="font-size:11px;color:#8e44ad;">● NO CONFIRMADO (alerta preliminar sin validar)</div>' +
+    '<div style="font-size:11px;color:#1565c0;">● OPERATIVA (base SAMU activa)</div>';
   return div;
 };
 legend.addTo(map);
